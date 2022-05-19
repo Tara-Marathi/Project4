@@ -1,7 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const route = require('./routes/route.js');
 const mongoose = require('mongoose');
+
+const route = require('./routes/route.js');
 
 const app = express();
 
@@ -10,9 +11,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 
-mongoose.connect("mongodb+srv://FunctionUp:surbhi231@cluster0.ufu0v.mongodb.net/Project4-db", {
-        useNewUrlParser: true
-    })
+mongoose.connect("mongodb+srv://FunctionUp:surbhi231@cluster0.ufu0v.mongodb.net/Project4-db", {useNewUrlParser: true})
     .then(() => console.log("MongoDb is connected"))
     .catch(err => console.log(err))
 
