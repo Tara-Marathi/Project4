@@ -9,11 +9,11 @@ const { promisify } = require("util");
 
 //Connect to redis
 const redisClient = redis.createClient(
-    16088,
-    "redis-16088.c264.ap-south-1-1.ec2.cloud.redislabs.com",
+    17912,
+    "redis-17912.c261.us-east-1-4.ec2.cloud.redislabs.com", 
     { no_ready_check: true }
 );
-redisClient.auth("h1VgZ4AWe5EJlg2jv16mkDYgyGE1OTx9", function (err) {
+redisClient.auth("Il1qCbBR3nJVGLhOxbPxAV38qyjqzxnp", function (err) { 
     if (err) throw err;
 });
 
@@ -40,7 +40,7 @@ const urlCreate = async function(req,res) {
         }
 
         if(!Object.keys(requestBody).length > 0){
-            return res.status(400).send({status:false,message:"Invalid request parameters"})
+            return res.status(400).send({status:false,message:"Invalid request parameters, Enter LongUrl "})
         }
 
         const { longUrl } = requestBody // destructure the longUrl 
@@ -49,30 +49,33 @@ const urlCreate = async function(req,res) {
             return res.status(400).send({status:false,message:"LongUrl required"})
         }
 
-        // check long url if valid using the validUrl.isUri method
+        // check long url if valid 
         if (!validUrl.isUri(longUrl)) {
-            return res.status(200).send({status:false,msg:"Invalid longUrl"})
+            return res.status(400).send({status:false,msg:"Invalid longUrl"})
         }
-
+        if (!(/^(http[s]?:\/\/){0,1}(www\.){0,1}[a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,5}[\.]{0,1}/.test(longUrl))) {
+            return res.status(400).send({ status: false, message: "Invalid LongURL" })
+        }
 
         // const urlExist = await urlModel.findOne({longUrl})
 
         const urlExist = await GET_ASYNC(`${longUrl}`)
         const parsedUrl = JSON.parse(urlExist)
+
          // url exist and return the respose
         if (parsedUrl) {
-            return res.status(200).send({ status: true, data: {longUrl :parsedUrl.longUrl,shortUrl: parsedUrl.shortUrl,urlCode: parsedUrl.urlCode} });
+            return res.status(200).send({ status: true, message:"ShortUrl already exist",data: {longUrl :parsedUrl.longUrl,shortUrl: parsedUrl.shortUrl,urlCode: parsedUrl.urlCode} });
         } 
 
-        // if baseUrl and longUrl valid, we create the url code
-        const urlCode = shortId.generate()
+        // if baseUrl valid, we create the url code
+        const urlCode = shortId.generate().toLowerCase()
 
         const code = await urlModel.findOne({urlCode})
         if(code){
             return res.status(400).send({status:false, msg:"urlCode already exist"})
         }
      
-        // join the generated short code the the base url
+        // join the generated short code to the the base url
         const shortUrl = baseUrl + '/' + urlCode
 
         // invoking the Url model and saving to the DB
@@ -81,7 +84,6 @@ const urlCreate = async function(req,res) {
 
         await SET_ASYNC(`${data.longUrl}`, JSON.stringify(data))
 
-        //await SET_ASYNC(`${req.params.authorId}`, JSON.stringify(profile))
         return res.status(201).send({ status: true,message:"ShortUrl is created", data:{longUrl :data.longUrl,shortUrl: data.shortUrl,urlCode: data.urlCode}});
 
     }
@@ -106,7 +108,7 @@ const getUrl = async function(req,res){
         else{
             const codeExist = await urlModel.findOne({urlCode:urlCode});
             if(!codeExist){
-                return res.status(404).send({status:false,message:"urlCode does not exist"})
+                return res.status(404).send({status:false,message:"urlCode not found"})
             }
             await SET_ASYNC(`${urlCode}`, JSON.stringify(codeExist))
             return res.status(302).redirect(codeExist.longUrl)
